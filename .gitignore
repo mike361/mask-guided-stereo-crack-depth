@@ -205,3 +205,52 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# =========================
+# Project-specific ignores
+# =========================
+
+# --- Outputs / generated results (DO NOT COMMIT) ---
+results*/
+output*/
+outputs*/
+checkpoints*/
+tb_logs*/
+runs*/
+logs*/
+
+# --- Generated files from your pipeline ---
+*.npy
+*.npz
+*.mat
+*.csv
+*.tif
+*.tiff
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# --- Point-cloud exports ---
+pointcloud*.txt
+*.ply
+*.pcd
+*.las
+*.laz
+
+# --- MATLAB temp / cache ---
+*.asv
+*.m~
+*.mex*
+*.p
+*.slxc
+*.autosave
+*.bak
+slprj/
+codegen/
+*.fig
+
+# --- OS / misc ---
+Thumbs.db
+.DS_Store
+
