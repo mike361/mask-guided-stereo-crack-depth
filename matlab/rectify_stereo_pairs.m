@@ -1,3 +1,23 @@
+%% rectify_stereo_pairs.m
+% Purpose:
+%   Rectify stereo RGB images and their predicted crack masks using MATLAB stereoParams.
+%
+% Inputs:
+%   - Original left/right RGB images (I1, I2)
+%   - Predicted left/right masks (M1, M2)
+%   - calibrationSession.mat providing stereoParams
+%
+% Outputs:
+%   - Rectified RGB images (J1, J2)
+%   - Rectified masks (J1m, J2m) using nearest-neighbor interpolation
+%   - rect_meta_data*.mat containing fx (px) and baseline_mm
+%
+% Notes:
+%   - OutputView='valid' enforces a common valid region after rectification.
+%   - Mask interpolation MUST be nearest-neighbor to preserve binary labels.
+
+
+
 %% Load original stereo images and predicted masks
 I1 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\left\New folder\Ls4f35_m.JPG');
 I2 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\right\New folder\Rs4f35_m.JPG');
