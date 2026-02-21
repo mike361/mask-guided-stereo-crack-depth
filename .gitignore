@@ -219,17 +219,25 @@ tb_logs*/
 runs*/
 logs*/
 
-# --- Generated files from your pipeline ---
-*.npy
-*.npz
-*.mat
-*.csv
-*.tif
-*.tiff
-*.png
-*.jpg
-*.jpeg
-*.webp
+# --- Generated files from your pipeline (ONLY inside outputs) ---
+results*/**/*.npy
+results*/**/*.npz
+results*/**/*.mat
+results*/**/*.csv
+results*/**/*.tif
+results*/**/*.tiff
+results*/**/*.png
+results*/**/*.jpg
+results*/**/*.jpeg
+results*/**/*.webp
+
+output*/**/*
+outputs*/**/*
+checkpoints*/**/*
+tb_logs*/**/*
+runs*/**/*
+logs*/**/*
+
 
 # --- Point-cloud exports ---
 pointcloud*.txt
