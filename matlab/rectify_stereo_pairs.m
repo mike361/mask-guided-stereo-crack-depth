@@ -1,96 +1,118 @@
 %% rectify_stereo_pairs.m
 % Purpose:
 %   Rectify stereo RGB images and their predicted crack masks using MATLAB stereoParams.
-%
+
 % Inputs:
-%   - Original left/right RGB images (I1, I2)
-%   - Predicted left/right masks (M1, M2)
-%   - calibrationSession.mat providing stereoParams
-%
-% Outputs:
-%   - Rectified RGB images (J1, J2)
-%   - Rectified masks (J1m, J2m) using nearest-neighbor interpolation
-%   - rect_meta_data*.mat containing fx (px) and baseline_mm
-%
+%   - left_img_path, right_img_path: paths to original left/right RGB images
+%   - left_mask_path, right_mask_path: paths to predicted left/right masks (PNG)
+%   - calib_mat_path: path to calibrationSession.mat (stereoParams)
+%   - out_dir: output directory for rectified images/masks/meta
+%   - outputView: 'valid' (default) or 'full'
+
+% Outputs (saved to out_dir):
+%   - <left_base>_rect.png, <right_base>_rect.png
+%   - <left_base>_mask_rect.png, <right_base>_mask_rect.png
+%   - rect_meta_data.mat (fx, baseline_mm, orig_width, rect_width)
+
 % Notes:
 %   - OutputView='valid' enforces a common valid region after rectification.
 %   - Mask interpolation MUST be nearest-neighbor to preserve binary labels.
 
+% How to run:
+%rectify_stereo_pairs( ...
+%  "data/left/Ls4f35_m.JPG", ...
+%  "data/right/Rs4f35_m.JPG", ...
+%  "outputs/masks/pred_mask_Ls4f35.png", ...
+%  "outputs/masks/pred_mask_Rs4f35.png", ...
+%  "calib/calibrationSession.mat", ...
+%  "outputs/rectified", ...
+%  "valid");
 
 
-%% Load original stereo images and predicted masks
-I1 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\left\New folder\Ls4f35_m.JPG');
-I2 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\right\New folder\Rs4f35_m.JPG');
+function rectify_stereo_pairs(left_img_path, right_img_path, left_mask_path, right_mask_path, calib_mat_path, out_dir, outputView)
+%RECTIFY_STEREO_PAIRS Rectify stereo RGB images and predicted masks using stereoParams.
+%
+% Inputs:
+%   left_img_path   - path to left RGB image
+%   right_img_path  - path to right RGB image
+%   left_mask_path  - path to left predicted mask (png)
+%   right_mask_path - path to right predicted mask (png)
+%   calib_mat_path  - path to calibrationSession.mat (contains calibrationSession.CameraParameters)
+%   out_dir         - output folder to save rectified images/masks/meta
+%   outputView      - 'valid' (default) or 'full'
+%
+% Outputs (saved to out_dir):
+%   left_rect.png, right_rect.png
+%   left_mask_rect.png, right_mask_rect.png
+%   rect_meta_data.mat (fx, baseline_mm, orig_width, rect_width)
+%
+% Notes:
+%   - Masks are rectified with nearest-neighbor interpolation to preserve binary labels.
 
-M1 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\pred_mask_Ls4f35.png');
-M2 = imread('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\pred_mask_Rs4f35.png');
+if nargin < 7 || isempty(outputView), outputView = 'valid'; end
+if nargin < 6 || isempty(out_dir), out_dir = pwd; end
+if ~exist(out_dir, 'dir'), mkdir(out_dir); end
 
-%% Load stereo calibration session
-S = load('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\calibrationSession.mat');
+% -------------------- Load inputs --------------------
+I1 = imread(left_img_path);
+I2 = imread(right_img_path);
+
+M1 = imread(left_mask_path);
+M2 = imread(right_mask_path);
+
+S = load(calib_mat_path);
 stereoParams = S.calibrationSession.CameraParameters;
 
-%% Preprocess masks (ensure logical first)
+% -------------------- Preprocess masks --------------------
 if size(M1,3) > 1, M1 = rgb2gray(M1); end
 if size(M2,3) > 1, M2 = rgb2gray(M2); end
 
 M1b = bwareaopen(M1 > 0, 100);
 M2b = bwareaopen(M2 > 0, 50);
 
-% Keep the dominant crack component (adjust if you truly need >1)
 M1c = bwareafilt(M1b, 1);
 M2c = bwareafilt(M2b, 1);
 
-% Morphological cleanup (orientation-agnostic; change if you prefer line SE)
 M1c = imclose(M1c, strel('disk', 2));
 M2c = imclose(M2c, strel('disk', 2));
 
-M11 = uint8(M1c) * 255;
-M22 = uint8(M2c) * 255;
+M11 = M1c > 0;
+M22 = M2c > 0;
 
-figure;
-subplot(1,2,1); imshow(M1);  title('Raw predicted mask (L)');
-subplot(1,2,2); imshow(M11); title('Cleaned mask (L)');
-
-figure;
-subplot(1,2,1); imshow(M2);  title('Raw predicted mask (R)');
-subplot(1,2,2); imshow(M22); title('Cleaned mask (R)');
-
-%% Convert to logical for rectification
-M11 = M11 > 0;
-M22 = M22 > 0;
-
-%% Rectify RGB and masks (same OutputView everywhere)
-outputView = 'valid';
-
+% -------------------- Rectify --------------------
 [J1, J2, Q] = rectifyStereoImages(I1, I2, stereoParams, 'OutputView', outputView);
 
-% For masks: nearest-neighbor interpolation
 [J1m, J2m] = rectifyStereoImages(M11, M22, stereoParams, 'nearest', 'OutputView', outputView);
 J1m = uint8(J1m) * 255;
 J2m = uint8(J2m) * 255;
 
-figure;
-subplot(1,2,1); imshow(stereoAnaglyph(J1, J2));  title('Rectified RGB anaglyph');
-subplot(1,2,2); imshow(stereoAnaglyph(J1m, J2m)); title('Rectified masks anaglyph');
+% -------------------- Save outputs --------------------
+[~, baseL, ~] = fileparts(left_img_path);
+[~, baseR, ~] = fileparts(right_img_path);
 
-figure; showRectifiedWithEpipolar(J1, J2, 14);
+left_rect_path  = fullfile(out_dir, [baseL '_rect.png']);
+right_rect_path = fullfile(out_dir, [baseR '_rect.png']);
 
-A = imfuse(J1, J2, 'ColorChannels', [1 2 0], 'Scaling', 'joint');
-figure; drawEpipolarOnSingle(A, 14);
+left_mask_rect_path  = fullfile(out_dir, [baseL '_mask_rect.png']);
+right_mask_rect_path = fullfile(out_dir, [baseR '_mask_rect.png']);
 
-%% Save rectified RGB and masks
-imwrite(J1,  'Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\Ls4f35_rect_m.png');
-imwrite(J2,  'Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\Rs4f35_rect_m.png');
-imwrite(J1m, 'Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\Ls4f35_mask_rect.png');
-imwrite(J2m, 'Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\Rs4f35_mask_rect.png');
+imwrite(J1,  left_rect_path);
+imwrite(J2,  right_rect_path);
+imwrite(J1m, left_mask_rect_path);
+imwrite(J2m, right_mask_rect_path);
 
-%% Export rectified meta (fx, baseline_mm)
-fx = Q(3,4);                 % verify once with a known-depth target
-b_m = 1 / Q(4,3);            % baseline in meters
-baseline_mm = abs(b_m) * 1000;   % IMPORTANT: convert to mm
+% -------------------- Export meta --------------------
+fx = Q(3,4);              % focal length in pixels (verify once with known target if needed)
+b_m = 1 / Q(4,3);         % baseline in meters
+baseline_mm = abs(b_m) * 1000;
 
 orig_width = size(I1, 2);
 rect_width = size(J1, 2);
 
-save('Floor crack ICT corriedor\Slab test\all_crack\site\s4f35\rect_meta_datas4f35.mat', ...
-     'fx', 'baseline_mm', 'orig_width', 'rect_width');
+save(fullfile(out_dir, 'rect_meta_data.mat'), ...
+    'fx', 'baseline_mm', 'orig_width', 'rect_width');
+
+fprintf('[saved] Rectified images/masks -> %s\n', out_dir);
+fprintf('[saved] rect_meta_data.mat\n');
+end
+
