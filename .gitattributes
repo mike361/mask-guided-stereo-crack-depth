@@ -1,0 +1,2 @@
+# Force GitHub Linguist to treat .m as MATLAB (not Objective-C)
+*.m linguist-language=MATLAB
