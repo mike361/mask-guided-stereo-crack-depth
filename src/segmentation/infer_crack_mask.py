@@ -1,18 +1,28 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
-Standalone inference for crack segmentation (U-Net + ResNet34).
+concrete_crack_inference.py
 
-Example:
-  python concrete_crack_inference.py \
-    --image data/R101112f18.JPG \
-    --model checkpoints/unet_resnet34_crack/savedmodel \
-    --backbone resnet34 \
-    --patch 512 \
-    --thresh 0.5 \
-    --out checkpoints/unet_resnet34_crack/pred_mask_R101112f18.png
+Purpose
+-------
+Run full-resolution crack mask inference using a trained U-Net+ResNet34 model.
+
+Key Idea
+--------
+The input image is center-cropped to a size divisible by the patch size, then patchified,
+predicted tile-by-tile, thresholded, and finally stitched back via unpatchify.
+
+Inputs
+------
+- --image : RGB image path
+- --model : SavedModel directory or .h5
+- --backbone : segmentation_models backbone name (default: resnet34)
+- --patch : patch size (default: 512)
+- --thresh : sigmoid threshold (default: 0.5)
+
+Output
+------
+- Optional binary mask PNG saved via --out (uint8 {0,255})
 """
+
 
 import os
 import argparse
