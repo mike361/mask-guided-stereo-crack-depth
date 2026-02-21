@@ -1,16 +1,35 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Mask-guided two-pass SGBM for crack depth estimation on MATLAB-rectified pairs.
+mask_guided_sgbm.py
 
-Notes
------
-This script performs:
-  1) Two-pass SGBM (crack-focused pass + background-focused pass)
-  2) Mask-derived soft weight map W for fusion
-  3) Left-right consistency (LRC) check + optional guided filtering
-  4) Metric depth recovery (mm) + plane-relative residual
-  5) Diagnostics + exports (PNGs, MAT/NPY, point clouds)
+Purpose
+-------
+Compute a metric depth map for concrete crack scenes using a mask-guided two-pass
+SGBM strategy on rectified stereo pairs.
+
+Inputs
+------
+- Rectified left/right images (RGB or grayscale)
+- Rectified left/right crack masks (binary)
+- Stereo calibration metadata (fx, baseline, etc.)
+
+Outputs
+-------
+- Disparity maps (pass1/pass2/fused)
+- Validity masks (ROI-valid / LRC-valid)
+- Metric depth map (mm)
+- Optional diagnostic figures and exported arrays (.mat/.npy)
+
+Core Ideas
+----------
+1) Two-pass SGBM:
+   - crack-focused pass: tuned to preserve discontinuities near crack pixels
+   - background-focused pass: tuned for smooth intact regions
+2) Mask-derived fusion:
+   - use crack mask / soft weights to blend disparities from the two passes
+3) Validity enforcement:
+   - ROI + left-right consistency (LRC) + optional filtering
+4) Metric depth:
+   - depth_mm = (fx_px * baseline_mm) / disparity_px
 
 Example
 -------
