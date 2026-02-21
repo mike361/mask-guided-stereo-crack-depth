@@ -1,20 +1,31 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
-Concrete crack segmentation (U-Net + ResNet34 backbone) using patch-based training.
+concrete_crack_segmentation.py
 
-This script:
-  - Loads RGB images and corresponding binary masks
-  - Center-crops to multiples of patch size
-  - Patchifies into non-overlapping 512×512 tiles
-  - (Optional) keeps only tiles that contain at least N crack pixels
-  - Trains a U-Net (segmentation_models) with BCE+Jaccard loss
-  - Saves best checkpoint, SavedModel, .h5, and a small config.json
-  - Includes two small demos:
-      * predict on one random test patch
-      * predict on an arbitrary full-size image (center-cropped to multiples)
+Purpose
+-------
+Train a crack segmentation model (U-Net with ResNet34 encoder) using patch-based training.
+
+Inputs
+------
+- RGB training images (JPG/PNG) under images/sample/
+- Binary crack masks (PNG) under mask/sample/
+  (mask pixels expected as {0,255} or {0,1})
+
+Outputs
+-------
+- Best checkpoint (ModelCheckpoint) saved to checkpoints/unet_resnet34_crack/
+- SavedModel and .h5 export for inference
+- Training curves (loss, IoU) and a quick visual sanity check
+
+Pipeline Summary
+----------------
+1) Load images/masks and center-crop to multiples of patch size (512×512)
+2) Patchify into non-overlapping tiles
+3) Optional filtering: keep only patches containing crack pixels
+4) Train U-Net (segmentation_models) with BCE + Jaccard loss
+5) Save trained model and config, run small demo predictions
 """
+
 
 import os
 import glob
