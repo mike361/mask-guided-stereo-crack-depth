@@ -1,3 +1,6 @@
+**Primary implementation:** Python (segmentation, SGBM, crack depth estimation)  
+**Supporting implementation:** MATLAB (stereo calibration and rectification)
+
 # Mask-Guided Stereo Crack Depth Estimation
 
 This repository implements a mask-guided stereo vision framework for quantitative crack depth estimation on concrete surfaces.  
