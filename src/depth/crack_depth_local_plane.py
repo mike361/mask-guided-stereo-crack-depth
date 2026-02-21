@@ -1,31 +1,32 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 crack_depth_local_plane.py
 
-Python port of your MATLAB "Algorithm A: skeleton-guided local plane baseline" depth drop computation.
+Purpose
+-------
+Estimate metric crack depth (mm) from a reconstructed metric depth map using a
+skeleton-guided local intact plane baseline (RANSAC) and robust crack sampling.
 
-Inputs:
-  - depth map (mm) from your Python SGBM pipeline (either .mat containing 'depth_mm' or a .npy)
-  - rectified crack mask (binary PNG)
+Inputs
+------
+- Rectified crack mask (binary PNG)
+- Depth map in mm (.mat containing 'depth_mm' or .npy)
 
-Core steps (matches MATLAB):
-  1) Load depth + mask, build valid mask
-  2) Front-face ROI cropping (fractions)
-  3) Crack mask cleaning: open -> area open -> keep N largest components
-  4) Build intact eligibility mask: valid & ~crack & ~buffer-dilated-crack; optional border crop; optional depth gradient cull
-  5) Skeletonize + spur pruning (approximate)
-  6) Subsample skeleton points
-  7) For each skeleton point:
-        - intact annulus sampling
-        - crack disk sampling constrained by crack band
-        - local RANSAC plane fit z = a*x + b*y + c (vertical residual threshold in mm)
-        - drop = z_base(skel_pt) - median(z_crack_local)
-  8) Robust summary stats + histogram
-  9) Save CSV outputs
+Outputs
+-------
+- Per-skeleton-point depth drops (CSV)
+- Summary statistics (CSV: median, IQR, P90-P10)
+- Diagnostic masks and histogram figure
 
-Dependencies:
-  pip install numpy scipy opencv-python scikit-image matplotlib
+Method Summary (Algorithm A)
+----------------------------
+1) Clean crack mask and build ROI-valid mask
+2) Skeletonize crack and subsample skeleton points
+3) For each skeleton point:
+   - sample intact annulus (Ωo \ Ωi)
+   - fit local plane z = ax + by + c using RANSAC
+   - sample crack depth inside local crack band
+   - compute drop = z_plane(s) - median(z_crack)
+4) Report robust statistics (median, IQR, P90-P10)
 
 Example:
   python crack_depth_local_plane.py \
