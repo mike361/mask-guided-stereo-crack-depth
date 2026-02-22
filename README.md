@@ -1,103 +1,218 @@
-**Primary implementation:** Python (segmentation, SGBM, crack depth estimation)  
-**Supporting implementation:** MATLAB (stereo calibration and rectification)
+# Mask-Guided Semi Global Block Matching Depth Estimation   
+## Mask-Guided Stereo Vision Technique for Crack Depth Estimation of Concrete Bridge Deck
 
-# Mask-Guided Stereo Crack Depth Estimation
-
-This repository implements a mask-guided stereo vision framework for quantitative crack depth estimation on concrete surfaces.  
-The pipeline integrates semantic crack segmentation, stereo rectification, region-adaptive SGBM disparity estimation, and skeleton-guided local plane depth quantification.
+Michael Bekele Maru, AHM Muntasir Billaha∗  
 
 ---
 
-# Overview of the Pipeline
+## Abstract
 
-The overall workflow consists of five major stages:
+Accurate quantification of crack depth on concrete surfaces remains challenging due to the limitations of purely image-based and purely geometric approaches. Conventional 2D crack detection methods provide only surface-level information, while standard stereo reconstruction algorithms often degrade near sharp depth discontinuities such as crack boundaries.
 
-## 1. Crack Segmentation (Training + Inference)
+This repository presents a mask-guided stereo vision framework for quantitative crack depth estimation on concrete surfaces. The framework integrates semantic crack segmentation, stereo calibration and rectification, region-adaptive Semi-Global Block Matching (SGBM), and skeleton-guided local plane depth quantification.
 
-A U-Net model with a ResNet34 backbone is trained on a public crack image dataset.  
-The trained model is then used to generate binary crack masks for stereo image pairs (left and right images).
+A two-pass disparity estimation strategy is employed, combining crack-focused and background-focused SGBM with mask-based fusion and left-right consistency validation. The resulting metric depth map is processed using a local intact plane fitting strategy to compute physically interpretable crack depth in millimeters.
 
-**Output:**
-- `left_mask.png`
-- `right_mask.png`
+The proposed pipeline enables non-contact, image-based crack depth measurement suitable for structural health monitoring and automated infrastructure inspection.
+
+---
+## Key Contributions
+
+- Mask-guided two-pass region-adaptive SGBM formulation
+- Disparity fusion via crack-aware weighting
+- Skeleton-guided local plane crack depth quantification
+- Field validation on real concrete crack defects
+
+# System Requirements
+
+All experiments were conducted under the following software configuration.
+
+## Software Environment
+
+- Python 3.9 – 3.11
+- OpenCV (contrib build required for SGBM) 
+- NumPy, SciPy, scikit-image
+- Matplotlib
+- TensorFlow (segmentation training)     
+- MATLAB R2022a or later (Stereo Camera Calibrator + Computer Vision Toolbox)  
+Note: Stereo rectification must be performed beforehand in MATLAB (Computer Vision Toolbox). This repository assumes rectified stereo pairs and rectified crack masks are provided as inputs.  
+---
+
+# 1. Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/mask-guided-stereo-crack-depth.git
+cd mask-guided-stereo-crack-depth
+```
+---
+
+**Environment Setup**
+
+The framework uses two independent Python environments:
+
+1. Segmentation environment (U-Net training and inference)  
+2. Stereo and depth environment (Mask-guided SGBM and crack depth estimation)
 
 ---
 
-## 2. Stereo Camera Calibration (MATLAB)
+**Segmentation Environment**
 
-Stereo camera parameters are estimated using MATLAB Stereo Camera Calibrator.
-
-**Outputs include:**
-- Intrinsic parameters
-- Extrinsic parameters
-- Projection matrix `Q`
-- Focal length `fx`
-- Baseline (converted to mm)
+```bash
+pip install -r requirements/requirements_segmentation.txt
+```
 
 ---
 
-## 3. Stereo Rectification (MATLAB)
+**Stereo/depth environment**
+```bash
+pip install -r requirements/requirements_stereo.txt
+```
+---
 
-Using the estimated stereo parameters:
+**MATLAB Requirements**
 
-- Left and right RGB images are rectified
-- Corresponding crack masks are rectified using nearest-neighbor interpolation
-- Rectification metadata (fx, baseline_mm) is exported
+Stereo calibration and rectification are performed using:
 
-**Outputs:**
-- `*_rect.png` (rectified RGB images)
-- `*_mask_rect.png` (rectified masks)
-- `rect_meta_data.mat` (fx, baseline_mm, image sizes)
+- MATLAB Stereo Camera Calibrator
+- Computer Vision Toolbox
+  
+---
+
+# 2. Processing Pipeline
+
+The overall workflow consists of five major stages.
+
+**Step 1 — Crack Segmentation**
+```bash
+python src/segmentation/train_crack_segmentation.py
+```
+- Patch-based U-Net training (512×512 tiles)
+- Optional crack-patch filtering
+- BCE + Jaccard loss
+- IoU-based checkpoint saving
+
+For inference:
+```bash
+python src/segmentation/infer_crack_mask.py 
+```
+
+**Outputs**
+
+- left_mask.png
+- right_mask.png
 
 ---
 
-## 4. Mask-Guided SGBM Disparity & Metric Depth
+**Step 2 — Stereo Calibration (MATLAB)**
 
-Using:
+Using MATLAB Stereo Camera Calibrator:
 
-- Rectified stereo images
-- Rectified crack masks
-- Calibration metadata
+- Estimate intrinsic and extrinsic parameters
+- Generate projection matrix Q
+- Export calibrationSession.mat
 
-A region-adaptive two-pass SGBM algorithm is applied:
+---
 
-- Auto or manual disparity band selection
-- Overlap-validity constraint
-- Left-right consistency (LRC)
-- Region-aware matching cost and smoothness
-- Disparity fusion
-- Metric depth recovery (mm)
+**Step 3 — Stereo Rectification (MATLAB)**
 
-**Outputs:**
+Execute:
+```bash
+matlab/rectify_stereo_pairs.m
+```
+**Outputs**
+
+- Rectified left RGB image: *_rect.png
+- Rectified right RGB image: *_rect.png
+- Rectified left crack mask: *_mask_rect.png
+- Rectified right crack mask: *_mask_rect.png
+- Rectification metadata file: rect_meta_data.mat
+  (containing fx, baseline_mm, orig_width, rect_width)
+
+---
+
+**Step 4 — Mask-Guided SGBM & Metric Depth Recovery**
+
+Execute:
+```bash
+src/stereo/mask_guided_sgbm.py
+```
+**Core components:**
+
+- Automatic or manual disparity band selection
+- Two-pass SGBM (crack-focused + background-focused)
+- Mask-derived soft weighting
+- Left-right consistency validation
+- Region-aware disparity fusion
+- Metric depth conversion (mm)
+
+**Outputs**
+
 - Fused disparity map
-- Depth map (`depth_mm`)
 - Validity masks
+- depth_mm
 - Diagnostic visualizations
 
 ---
 
-## 5. Crack Depth Estimation (Local Plane Method)
+**Step 5 — Skeleton-Guided Crack Depth Estimation**
 
-Using:
+Execute:
+```bash
+src/depth/crack_depth_local_plane.py
+```
+**Method:**
 
-- Rectified crack mask
-- Metric depth map
+1. Skeleton extraction from crack mask
+2. Local intact annulus sampling
+3. RANSAC plane fitting
+4. Vertical depth drop computation
+5. Robust statistics (Median, IQR, P90–P10)
 
-A skeleton-guided local plane fitting method is applied:
+**Outputs**
 
-- Skeleton extraction
-- Local intact annulus sampling
-- RANSAC plane fitting
-- Vertical crack depth drop estimation (mm)
-- Robust statistics (Median, IQR, P90–P10)
-
-**Outputs:**
 - Crack depth samples (CSV)
 - Summary statistics (CSV)
-- Histogram plot
+- Histogram plots
 - Diagnostic masks
 
 ---
 
 # Repository Structure
+```
+mask-guided-stereo-crack-depth/
+│
+├── src/
+│   ├── segmentation/
+│   ├── stereo/
+│   ├── depth/
+│
+├── matlab/
+│   └── rectify_stereo_pairs.m
+│
+├── requirements/
+│
+├── docs/
+│   └── figures/
+│
+└── examples/
+```
+
+# Citation
+
+If you use this code, please cite:
+
+@article{maru2026maskguided,
+  title={Mask-Guided Stereo Vision for Quantitative Crack Depth Estimation},
+  author={Maru, Michael Bekele},
+  journal={Under review},
+  year={2026}
+}
+
+
+
+
+
+
 
