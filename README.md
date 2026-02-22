@@ -204,9 +204,9 @@ mask-guided-stereo-crack-depth/
 If you use this code, please cite:
 
 @article{maru2026maskguided,
-  title={Mask-Guided Stereo Vision for Quantitative Crack Depth Estimation},
-  author={Maru, Michael Bekele},
-  journal={Under review},
+  title={Mask-Guided Stereo Vision Technique for Crack Depth Estimation of Concrete Bridge Deck},
+  author={Maru Michael Bekele, AHM Muntasir Billaha*},
+  journal={TBD},
   year={2026}
 }
 
