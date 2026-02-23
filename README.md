@@ -201,16 +201,8 @@ mask-guided-stereo-crack-depth/
 
 # Citation
 
-If you use this code, please cite:
-
-@article{maru2026maskguided,
-  title={Mask-Guided Stereo Vision Technique for Crack Depth Estimation of Concrete Bridge Deck},
-  author={Maru Michael Bekele, AHM Muntasir Billaha*},
-  journal={TBD},
-  year={2026}
-}
-
-
+This manuscript is currently under review at *Automation in Construction*.  
+The citation information will be updated upon acceptance and publication.
 
 
 
