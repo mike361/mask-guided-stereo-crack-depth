@@ -201,7 +201,7 @@ mask-guided-stereo-crack-depth/
 
 # Citation
 
-This manuscript is currently under review at *Automation in Construction*.  
+This manuscript is currently under review at *Engineering Structures*.  
 The citation information will be updated upon acceptance and publication.
 
 
